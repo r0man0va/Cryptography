@@ -4,22 +4,20 @@
 #include <string>
 #include <windows.h>
 #include <cstdio>
-#include <math.h>
-#include <bitset>
+#include <vector>
 
 using namespace std;
+using ArrayInt = vector<uint64_t>;
 
-uint64_t findModulus(uint64_t p, uint64_t q) {
+uint64_t findModulus(uint64_t const& p, uint64_t const& q) {
 
     return p * q;
 }
-
-uint64_t EulerFunction(uint64_t p, uint64_t q) {
+uint64_t EulerFunction(uint64_t const& p, uint64_t const& q) {
 
     return ((p - 1) * (q - 1));
 }
-
-uint64_t GCD(uint64_t e, uint64_t fi)
+uint64_t GCD(uint64_t  e, uint64_t  fi)
 { // НОД (е - откр экспонента, fi - функция Эйлера)
     while (e > 0)
     {
@@ -31,8 +29,7 @@ uint64_t GCD(uint64_t e, uint64_t fi)
 
     return fi;
 }
-
-uint64_t findE(uint64_t fi) // находит е - открытую экспоненту
+uint64_t findE(uint64_t const& fi) // находит е - открытую экспоненту
 {
     // 1. Должно быть целое число e в диапозоне ( 1 < e < fi ) 2. Взаимно простое с fi , где число fi - функция Эйлера
     for (uint64_t e = 2; e < fi; e++)
@@ -44,8 +41,7 @@ uint64_t findE(uint64_t fi) // находит е - открытую экспоненту
     }
     return -1;
 }
-
-uint64_t findD(uint64_t e, uint64_t fi)
+uint64_t findD(uint64_t const& e, uint64_t const& fi)
 { // Находит число d обратное числу e по модулю fi, т.е. число, удовлетворяющее d * e ? 1 (mod fi)
     uint64_t d;
     uint64_t k = 1;
@@ -61,33 +57,79 @@ uint64_t findD(uint64_t e, uint64_t fi)
         }
     }
 }
-
-int modexp(int int_symbol, int power_number, int modulus)
+uint64_t modexp(uint64_t const& int_symbol, uint64_t const& power_number, uint64_t const& modulus)
 {
     if (power_number == 0) return 1;
-    int z = modexp(int_symbol, power_number / 2, modulus);
+    uint64_t z = modexp(int_symbol, power_number / 2, modulus);
     if (power_number % 2 == 0)
         return (z * z) % modulus;
     else
         return (int_symbol * z * z) % modulus;
 }
 
-string crypting(string text, string& cryptedText, uint64_t power, uint64_t modulus) {
-    uint64_t step1, step2, step3;
-    for (byte symbol : text) {
-        cout << (int)symbol;
-        //step1 = pow(symbol, power);
-        //step2 = step1 % modulus;
-        step2 = modexp(symbol, power, modulus);
-        step3 = (byte)step2;
-        //byte newCh = (byte)(pow((int)symbol, power)) % modulus;
-        cryptedText += step3;
-        //cout << (char)(int)symbol;
-    }
-    return cryptedText;
+unsigned short byteUnion(unsigned char byte1, unsigned char byte2)
+{
+    return byte1 << 8 | byte2;
 }
 
-string readFrom(char* filePath) {
+ArrayInt encryptingByByte(string const& text, uint64_t const& power, uint64_t const& modulus)
+{
+    ArrayInt result;
+    uint64_t encryptChar;
+    for (byte symbol : text)
+    {
+        encryptChar = modexp(symbol, power, modulus);
+        result.push_back(encryptChar);
+    }
+    return result;
+}
+ArrayInt decryptingByByte(ArrayInt const& text, uint64_t const& power, uint64_t const& modulus)
+{
+    ArrayInt result;
+    uint64_t decryptChar;
+    for (uint64_t encryptChar : text)
+    {
+        decryptChar = modexp(encryptChar, power, modulus);
+        result.push_back(decryptChar);
+    }
+    return result;
+}
+
+ArrayInt encryptingByWord(string const& text, uint64_t const& power, uint64_t const& modulus)
+{
+    ArrayInt result;
+    unsigned char nextByte;
+
+    for (int i = 0; i < text.size(); i += 2)
+    {
+        if (((text.size() % 2 != 0) and (text[i] == text.back())))
+        {
+            nextByte = 0;
+        }
+        else
+        {
+            nextByte = text[i + 1];
+        }
+        result.push_back(modexp(byteUnion(text[i], nextByte), power, modulus));
+    }
+    return result;
+}
+ArrayInt decryptingByWord(ArrayInt const& text, uint64_t const& power, uint64_t const& modulus)
+{
+    ArrayInt result;
+    uint64_t decryptBytes;
+
+    for (uint64_t word : text)
+    {
+        decryptBytes = modexp(word, power, modulus);
+        result.push_back(decryptBytes >> 8);
+        result.push_back((unsigned char)decryptBytes);
+    }
+    return result;
+}
+
+string readFrom(char* filePath)
+{
     string file;
     ifstream file0(filePath);
     if (!file0.is_open()) {
@@ -100,71 +142,78 @@ string readFrom(char* filePath) {
     return file;
 }
 
-int main(int argc, char* argv[]) {
+void writeToFile(const char* file, ArrayInt text)
+{
+    ofstream encryptedTextFile(file);
+    for (uint64_t elem : text)
+    {
+        encryptedTextFile << (unsigned char)elem;
+    }
+    encryptedTextFile.close();
+}
 
+int main(int argc, char* argv[])
+{
     setlocale(LC_ALL, ".1251");
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
 
-    string binary = bitset<8>(65).to_string(); //to binary
-    string binary1 = bitset<8>(66).to_string(); //to binary
-
-    cout << (int)"A" << endl;
-    cout << (int)"B" << endl;
-    cout << stoi(binary) << "\n";
-    cout << stoi(binary1) << "\n";
-    string binary12;
-    binary12 += binary;
-    binary12 += binary1;
-    cout << "bin12 = " << binary12 << endl;
-    //cout << "stoi bin12 = " << stoi(binary12) << endl;
-
-
-    unsigned long decimal = bitset<8>(binary).to_ulong();
-    unsigned long decimal12 = bitset<16>(binary12).to_ulong();
-
-    cout << decimal << "\n";
-    cout << "bin12 decimal = " << decimal12 << endl;
-    cout << "3377 ^ 17143 mod 24341 = " << modexp(3377, 17143, 24341) << endl;
-
-    string decrypted_C;
-    string crypted_C;
-    string C_toCrypt = readFrom(argv[1]);
+    string textToCrypt = readFrom(argv[1]);
     uint64_t p, q, modulus, fi, e, d;
-    cout << "RSA шифрование" << endl << "Шаг 1. Подготовка ключей." << endl;
+
+    cout << "RSA шифрование" << endl;
+
+    cout << "Шаг 1. Подготовка ключей.";
     p = stoi(readFrom(argv[2]));
     q = stoi(readFrom(argv[3]));
-    cout << "p = " << p << " , q = " << q << endl;
+    cout << " p = " << p << " , q = " << q << endl;
 
     modulus = findModulus(p, q);
-    cout << "Шаг 2. Модуль p * q = " << modulus;
+    cout << "Шаг 2. Модуль p * q = " << modulus << endl;
 
     fi = EulerFunction(p, q);
-    cout << endl << "Шаг 3. Находим функцию Эйлера. Ф = " << fi;
+    cout << "Шаг 3. Находим функцию Эйлера. Ф = " << fi << endl;
 
     e = findE(fi);
-    cout << endl << "Шаг 4. Находим число е - открытую экспоненту. e = " << e;
-
-    cout << endl << "Открытый ключ {e , modulus} = " << "{" << e << " , " << modulus << "}";
-
+    cout << "Шаг 4. Находим число е - открытую экспоненту. e = " << e << endl;
     d = findD(e, fi);
-    cout << endl << "Шаг 5. Находим число d - число обратное e и по модулю fi. d = e^(-1) mod fi = " << d;
+    cout << "Шаг 5. Находим число d - число обратное e и по модулю fi. d = e^(-1) mod fi = " << d << endl;
 
-    cout << endl << "Секретный ключ {d , modulus} = " << "{" << d << " , " << modulus << "}";
+    cout << "Открытый ключ {e , modulus} = " << "{" << e << " , " << modulus << "}" << endl;
+    cout << "Секретный ключ {d , modulus} = " << "{" << d << " , " << modulus << "}" << endl;
 
-    cout << endl << "Исходный текст." << endl << C_toCrypt << endl;
+    //cout << "Исходный текст." << endl << textToCrypt << endl;
 
-    crypted_C = crypting(C_toCrypt, crypted_C, e, modulus);
-    cout << endl << "Зашифрованный текст." << endl << crypted_C;
-    ofstream crypted_C_0(argv[4]);
-    crypted_C_0 << (crypted_C);
-    crypted_C_0.close();
+    ArrayInt encryptedText;
+    ArrayInt decryptedText;
 
-    decrypted_C = crypting(crypted_C, decrypted_C, d, modulus);
-    cout << endl << "Дешифрование зашифрованного текста." << endl << decrypted_C << endl;
-    ofstream decrypted_C_0(argv[5]);
-    decrypted_C_0 << (decrypted_C);
-    decrypted_C_0.close();
+    if (modulus < 255)
+    {
+        cout << "Ваш модуль меньше 255, чтобы шифровать по 1 байту, необходим p*q > 255\nДля шифрования по 2 байта, необходимо p*q > 65535." << endl;
+        exit(1);
+    }
+
+    if (modulus > 255 and modulus < 65535)
+    {
+        cout << "Ваш модуль меньше 65535, но больше чем 255, поэтому шифруем 1 байтом. " << endl;
+
+        encryptedText = encryptingByByte(textToCrypt, e, modulus);
+        writeToFile(argv[4], encryptedText);
+
+        decryptedText = decryptingByByte(encryptedText, d, modulus);
+        writeToFile(argv[5], decryptedText);
+    }
+
+    if (modulus > 65535)
+    {
+        cout << "Ваш модуль больше 65535, мшифруем по 2 байта. " << endl;
+
+        encryptedText = encryptingByWord(textToCrypt, e, modulus);
+        writeToFile(argv[4], encryptedText);
+
+        decryptedText = decryptingByWord(encryptedText, d, modulus);
+        writeToFile(argv[5], decryptedText);
+    }
 
     return 0;
 }
